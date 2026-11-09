@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('home')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="muted" th:text="${#temporals.format(today, 'EEEE, dd MMMM yyyy')}">Today</p>
+    </div>
+    <div class="actions">
+      <a class="btn primary" th:href="@{/customers/daily}">Today's deliveries</a>
+      <a class="btn" th:href="@{/inventory}">Add milk purchase</a>
+      <a class="btn" th:href="@{/customers/new}">Add customer</a>
+    </div>
+  </div>
+
+  <div class="alert warn" th:if="${missingToday > 0}">
+    <span th:text="${missingToday} + ' active customer(s) have no delivery recorded for today.'">x customers</span>
+    <form class="inline" method="post" th:action="@{/customers/daily/generate}">
+      <input type="hidden" name="date" th:value="${today}">
+      <button class="btn small primary" type="submit">Record today's deliveries</button>
+    </form>
+  </div>
+
+  <div class="alert danger" th:if="${stock.inStock().signum() < 0}">
+    <span>Stock is negative - you have sold more milk than you have recorded buying. A purchase may be missing.</span>
+    <a th:href="@{/inventory}">Open inventory</a>
+  </div>
+
+  <h2>Today</h2>
+  <section class="stats">
+    <div class="stat accent">
+      <span class="label">Milk delivered today</span>
+      <span class="value" th:text="${@fmt.qty(todayLitres)} + ' L'">0 L</span>
+      <span class="sub" th:text="${@fmt.money(todayAmount)} + ' billed'">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Milk bought today</span>
+      <span class="value" th:text="${@fmt.qty(todayBought)} + ' L'">0 L</span>
+    </div>
+    <div class="stat" th:classappend="${stock.inStock().signum() < 0} ? 'bad' : 'ok'">
+      <span class="label">Milk in stock</span>
+      <span class="value" th:text="${@fmt.qty(stock.inStock())} + ' L'">0 L</span>
+      <span class="sub" th:if="${stock.daysCover() != null}"
+            th:text="'about ' + ${stock.daysCover()} + ' days of supply'"></span>
+    </div>
+  </section>
+
+  <h2>Money</h2>
+  <section class="stats">
+    <div class="stat warn">
+      <span class="label">Pending collection (customers owe you)</span>
+      <span class="value" th:text="${@fmt.money(summary.pendingCollection())}">0</span>
+    </div>
+    <div class="stat bad">
+      <span class="label">Pending to pay (you owe suppliers)</span>
+      <span class="value" th:text="${@fmt.money(summary.pendingToSuppliers())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Total invested in milk</span>
+      <span class="value" th:text="${@fmt.money(summary.invested())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Received from customers</span>
+      <span class="value" th:text="${@fmt.money(summary.received())}">0</span>
+    </div>
+  </section>
+
+  <!-- <section class="grid-2">
+    <a class="card" th:href="@{/customers}"><h3>Customers &rarr;</h3><span class="muted">Daily quantity, billing, payments and ledger per customer.</span></a>
+    <a class="card" th:href="@{/suppliers}"><h3>Suppliers &rarr;</h3><span class="muted">Milk bought, payments made, amount still to pay.</span></a>
+    <a class="card" th:href="@{/inventory}"><h3>Inventory &rarr;</h3><span class="muted">Litres bought, sold, wasted and in stock.</span></a>
+    <a class="card" th:href="@{/accounts}"><h3>Accounts &rarr;</h3><span class="muted">Investment, money received, pending collection and payables.</span></a>
+  </section> -->
+</main>
+</body>
+</html>

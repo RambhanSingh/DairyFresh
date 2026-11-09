@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Daily deliveries')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('customers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Daily deliveries</h1>
+      <p class="muted" th:text="${#temporals.format(date, 'EEEE, dd MMMM yyyy')}">Date</p>
+    </div>
+    <div class="date-nav">
+      <a class="btn" th:href="@{/customers/daily(date=${date.minusDays(1)})}">&larr; Previous</a>
+      <form class="inline" method="get" th:action="@{/customers/daily}">
+        <input type="date" name="date" th:value="${date}" onchange="this.form.submit()">
+      </form>
+      <a class="btn" th:href="@{/customers/daily(date=${date.plusDays(1)})}">Next &rarr;</a>
+    </div>
+  </div>
+
+  <section class="stats three">
+    <div class="stat">
+      <span class="label">Deliveries</span>
+      <span class="value" th:text="${sales.size()}">0</span>
+    </div>
+    <div class="stat accent">
+      <span class="label">Milk delivered</span>
+      <span class="value" th:text="${@fmt.qty(litres)} + ' L'">0 L</span>
+    </div>
+    <div class="stat">
+      <span class="label">Amount billed</span>
+      <span class="value" th:text="${@fmt.money(amount)}">0</span>
+    </div>
+  </section>
+
+  <div class="alert warn" th:if="${!missing.isEmpty()}">
+    <div>
+      <b th:text="${missing.size()} + ' active customer(s) have no delivery on this day'">customers</b>
+      <div class="chips">
+        <span class="chip" th:each="c : ${missing}" th:text="${c.name}">name</span>
+      </div>
+    </div>
+    <form class="inline" method="post" th:action="@{/customers/daily/generate}">
+      <input type="hidden" name="date" th:value="${date}">
+      <button class="btn primary" type="submit">Record daily quantity for all</button>
+    </form>
+  </div>
+
+  <div class="card flush table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th><th>Location</th><th>Litres (edit &amp; save)</th>
+          <th class="num">Rate</th><th class="num">Amount</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="s : ${sales}">
+          <td><a th:href="@{/customers/{id}(id=${s.customer.id})}" th:text="${s.customer.name}">Name</a></td>
+          <td th:text="${s.customer.location}">Location</td>
+          <td>
+            <form class="inline" method="post" th:action="@{/customers/daily/{id}/quantity(id=${s.id})}">
+              <input type="hidden" name="date" th:value="${date}">
+              <input class="qty" type="number" name="quantity" step="0.01" min="0" th:value="${s.quantity}" required>
+              <button class="btn small" type="submit">Save</button>
+            </form>
+          </td>
+          <td class="num" th:text="${@fmt.money(s.rate)}">0</td>
+          <td class="num" th:text="${@fmt.money(s.amount)}">0</td>
+          <td class="num">
+            <form class="inline" method="post" th:action="@{/customers/daily/{id}/delete(id=${s.id})}"
+                  onsubmit="return confirm('Remove this delivery?')">
+              <input type="hidden" name="date" th:value="${date}">
+              <button class="btn small danger" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+        <tr th:if="${sales.isEmpty()}">
+          <td colspan="6" class="empty">No deliveries recorded for this day.</td>
+        </tr>
+      </tbody>
+      <tfoot th:if="${!sales.isEmpty()}">
+        <tr>
+          <td colspan="2">Total</td>
+          <td th:text="${@fmt.qty(litres)} + ' L'">0 L</td>
+          <td></td>
+          <td class="num" th:text="${@fmt.money(amount)}">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <p class="muted" style="margin-top:10px">Tip: set a quantity to 0 and save to remove that customer's delivery for the day.</p>
+</main>
+</body>
+</html>

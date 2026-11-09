@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Customer')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('customers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <h1 th:text="${customer.id == null} ? 'Add customer' : 'Edit customer'">Customer</h1>
+  </div>
+
+  <form class="card" method="post" th:action="@{/customers}" th:object="${customer}">
+    <input type="hidden" th:field="*{id}">
+    <div class="form-grid">
+      <label>Name
+        <input type="text" th:field="*{name}" required autofocus>
+        <span class="err" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">error</span>
+      </label>
+      <label>Phone
+        <input type="text" th:field="*{phone}">
+      </label>
+      <label class="full">Location / area
+        <input type="text" th:field="*{location}" placeholder="e.g. Shivaji Nagar, near the temple">
+      </label>
+      <label>Daily milk quantity (litres)
+        <input type="number" step="0.01" min="0" th:field="*{dailyQuantity}" required>
+        <span class="err" th:if="${#fields.hasErrors('dailyQuantity')}" th:errors="*{dailyQuantity}">error</span>
+      </label>
+      <label>Rate per litre (&#8377;)
+        <input type="number" step="0.01" min="0" th:field="*{ratePerLitre}" required>
+        <span class="err" th:if="${#fields.hasErrors('ratePerLitre')}" th:errors="*{ratePerLitre}">error</span>
+      </label>
+      <label class="check full">
+        <input type="checkbox" th:field="*{active}">
+        Active customer (included when you record daily deliveries)
+      </label>
+    </div>
+    <div class="actions" style="margin-top:18px">
+      <button class="btn primary" type="submit">Save customer</button>
+      <a class="btn" th:href="${customer.id == null} ? @{/customers} : @{/customers/{id}(id=${customer.id})}">Cancel</a>
+    </div>
+  </form>
+
+  <form th:if="${customer.id != null}" method="post" style="margin-top:16px"
+        th:action="@{/customers/{id}/delete(id=${customer.id})}"
+        onsubmit="return confirm('Delete this customer? This only works if there are no deliveries or payments.')">
+    <button class="btn danger small" type="submit">Delete customer</button>
+  </form>
+</main>
+</body>
+</html>

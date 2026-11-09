@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Suppliers')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('suppliers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Suppliers</h1>
+      <p class="muted">Who you buy milk from, what you bought and what you still have to pay.</p>
+    </div>
+    <div class="actions">
+      <a class="btn primary" th:href="@{/suppliers/new}">+ Add supplier</a>
+    </div>
+  </div>
+
+  <section class="stats three">
+    <div class="stat">
+      <span class="label">Suppliers shown</span>
+      <span class="value" th:text="${rows.size()}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Total milk bought (amount)</span>
+      <span class="value" th:text="${@fmt.money(purchasedTotal)}">0</span>
+    </div>
+    <div class="stat bad">
+      <span class="label">Pending to pay</span>
+      <span class="value" th:text="${@fmt.money(pendingTotal)}">0</span>
+    </div>
+  </section>
+
+  <form class="search" method="get" th:action="@{/suppliers}">
+    <input type="search" name="q" th:value="${q}" placeholder="Search by name, phone or location">
+    <button class="btn" type="submit">Search</button>
+    <a class="btn ghost" th:if="${q != null and !q.isBlank()}" th:href="@{/suppliers}">Clear</a>
+  </form>
+
+  <div class="card flush table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th>Location</th><th>Phone</th>
+          <th class="num">Usual rate / L</th><th class="num">Milk bought</th>
+          <th class="num">Paid</th><th class="num">Pending to pay</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="r : ${rows}">
+          <td><a th:href="@{/suppliers/{id}(id=${r.supplier().id})}" th:text="${r.supplier().name}">Name</a></td>
+          <td th:text="${r.supplier().location}">Location</td>
+          <td th:text="${r.supplier().phone}">Phone</td>
+          <td class="num" th:text="${@fmt.money(r.supplier().ratePerLitre)}">0</td>
+          <td class="num" th:text="${@fmt.money(r.purchased())}">0</td>
+          <td class="num" th:text="${@fmt.money(r.paid())}">0</td>
+          <td class="num" th:classappend="${r.balance().signum() > 0} ? 'owe' : 'clear'"
+              th:text="${@fmt.money(r.balance())}">0</td>
+        </tr>
+        <tr th:if="${rows.isEmpty()}">
+          <td colspan="7" class="empty">No suppliers yet. Click "Add supplier" to create the first one.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

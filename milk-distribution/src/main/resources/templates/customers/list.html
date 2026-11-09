@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Customers')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('customers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Customers</h1>
+      <p class="muted">Daily quantity, billing and pending amount for every customer.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" th:href="@{/customers/daily}">Daily deliveries</a>
+      <a class="btn primary" th:href="@{/customers/new}">+ Add customer</a>
+    </div>
+  </div>
+
+  <section class="stats three">
+    <div class="stat">
+      <span class="label">Customers shown</span>
+      <span class="value" th:text="${rows.size()}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Daily milk needed (active customers)</span>
+      <span class="value" th:text="${@fmt.qty(dailyTotal)} + ' L'">0 L</span>
+    </div>
+    <div class="stat warn">
+      <span class="label">Pending collection</span>
+      <span class="value" th:text="${@fmt.money(pendingTotal)}">0</span>
+    </div>
+  </section>
+
+  <form class="search" method="get" th:action="@{/customers}">
+    <input type="search" name="q" th:value="${q}" placeholder="Search by name, phone or location">
+    <button class="btn" type="submit">Search</button>
+    <a class="btn ghost" th:if="${q != null and !q.isBlank()}" th:href="@{/customers}">Clear</a>
+  </form>
+
+  <div class="card flush table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th>Location</th><th>Phone</th>
+          <th class="num">Daily (L)</th><th class="num">Rate / L</th>
+          <th class="num">Billed</th><th class="num">Received</th><th class="num">Pending</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="r : ${rows}" th:classappend="${!r.customer().active} ? 'inactive'">
+          <td>
+            <a th:href="@{/customers/{id}(id=${r.customer().id})}" th:text="${r.customer().name}">Name</a>
+            <span class="badge" th:unless="${r.customer().active}">inactive</span>
+          </td>
+          <td th:text="${r.customer().location}">Location</td>
+          <td th:text="${r.customer().phone}">Phone</td>
+          <td class="num" th:text="${@fmt.qty(r.customer().dailyQuantity)}">0</td>
+          <td class="num" th:text="${@fmt.money(r.customer().ratePerLitre)}">0</td>
+          <td class="num" th:text="${@fmt.money(r.billed())}">0</td>
+          <td class="num" th:text="${@fmt.money(r.paid())}">0</td>
+          <td class="num" th:classappend="${r.balance().signum() > 0} ? 'due' : 'clear'"
+              th:text="${@fmt.money(r.balance())}">0</td>
+        </tr>
+        <tr th:if="${rows.isEmpty()}">
+          <td colspan="8" class="empty">No customers yet. Click "Add customer" to create the first one.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Supplier')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('suppliers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <h1 th:text="${supplier.id == null} ? 'Add supplier' : 'Edit supplier'">Supplier</h1>
+  </div>
+
+  <form class="card" method="post" th:action="@{/suppliers}" th:object="${supplier}">
+    <input type="hidden" th:field="*{id}">
+    <div class="form-grid">
+      <label>Name
+        <input type="text" th:field="*{name}" required autofocus>
+        <span class="err" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">error</span>
+      </label>
+      <label>Phone
+        <input type="text" th:field="*{phone}">
+      </label>
+      <label class="full">Location / area
+        <input type="text" th:field="*{location}" placeholder="e.g. village or dairy name">
+      </label>
+      <label>Usual rate per litre (&#8377;)
+        <input type="number" step="0.01" min="0" th:field="*{ratePerLitre}" required>
+        <span class="err" th:if="${#fields.hasErrors('ratePerLitre')}" th:errors="*{ratePerLitre}">error</span>
+      </label>
+    </div>
+    <div class="actions" style="margin-top:18px">
+      <button class="btn primary" type="submit">Save supplier</button>
+      <a class="btn" th:href="${supplier.id == null} ? @{/suppliers} : @{/suppliers/{id}(id=${supplier.id})}">Cancel</a>
+    </div>
+  </form>
+
+  <form th:if="${supplier.id != null}" method="post" style="margin-top:16px"
+        th:action="@{/suppliers/{id}/delete(id=${supplier.id})}"
+        onsubmit="return confirm('Delete this supplier? This only works if there are no purchases or payments.')">
+    <button class="btn danger small" type="submit">Delete supplier</button>
+  </form>
+</main>
+</body>
+</html>

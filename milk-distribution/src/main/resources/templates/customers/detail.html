@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Customer ledger')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('customers')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>
+        <span th:text="${customer.name}">Customer</span>
+        <span class="badge" th:unless="${customer.active}">inactive</span>
+      </h1>
+      <div class="profile">
+        <span>Location: <b th:text="${#strings.isEmpty(customer.location)} ? '-' : ${customer.location}">-</b></span>
+        <span>Phone: <b th:text="${#strings.isEmpty(customer.phone)} ? '-' : ${customer.phone}">-</b></span>
+        <span>Daily quantity: <b th:text="${@fmt.qty(customer.dailyQuantity)} + ' L'">0 L</b></span>
+        <span>Rate: <b th:text="${@fmt.money(customer.ratePerLitre)} + ' / L'">0</b></span>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn" th:href="@{/customers/{id}/edit(id=${customer.id})}">Edit</a>
+      <a class="btn" th:href="@{/customers}">All customers</a>
+    </div>
+  </div>
+
+  <section class="stats three">
+    <div class="stat accent">
+      <span class="label">Total milk billed</span>
+      <span class="value" th:text="${@fmt.money(billed)}">0</span>
+    </div>
+    <div class="stat ok">
+      <span class="label">Total received</span>
+      <span class="value" th:text="${@fmt.money(paid)}">0</span>
+    </div>
+    <div class="stat" th:classappend="${balance.signum() > 0} ? 'warn' : 'ok'">
+      <span class="label" th:text="${balance.signum() < 0} ? 'Advance paid' : 'Pending amount'">Pending amount</span>
+      <span class="value" th:text="${@fmt.money(balance.abs())}">0</span>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <form class="card" method="post" th:action="@{/customers/{id}/payments(id=${customer.id})}">
+      <h2>Record payment received</h2>
+      <div class="form-row">
+        <label>Date
+          <input type="date" name="paymentDate" th:value="${today}" required>
+        </label>
+        <label>Amount (&#8377;)
+          <input type="number" name="amount" step="0.01" min="0.01" required>
+        </label>
+        <label>Note
+          <input type="text" name="note" placeholder="cash / UPI / month">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn primary" type="submit">Save payment</button>
+      </div>
+    </form>
+
+    <form class="card" method="post" th:action="@{/customers/{id}/sales(id=${customer.id})}">
+      <h2>Add a delivery</h2>
+      <div class="form-row">
+        <label>Date
+          <input type="date" name="saleDate" th:value="${today}" required>
+        </label>
+        <label>Litres
+          <input type="number" name="quantity" step="0.01" min="0.01" th:value="${customer.dailyQuantity}" required>
+        </label>
+        <label>Rate (&#8377;/L)
+          <input type="number" name="rate" step="0.01" min="0" th:value="${customer.ratePerLitre}">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" type="submit">Add delivery</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <h2>Ledger</h2>
+    <div class="card flush table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Type</th><th>Details</th>
+            <th class="num">Milk billed</th><th class="num">Paid</th><th class="num">Balance</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="e : ${ledger}">
+            <td th:text="${#temporals.format(e.date(), 'dd MMM yyyy')}">date</td>
+            <td>
+              <span class="badge" th:classappend="${e.type() == 'BILL'} ? 'bill' : 'pay'"
+                    th:text="${e.type() == 'BILL'} ? 'Delivered' : 'Paid'">type</span>
+            </td>
+            <td th:text="${e.description()}">details</td>
+            <td class="num" th:text="${e.debit().signum() > 0} ? ${@fmt.money(e.debit())} : ''"></td>
+            <td class="num" th:text="${e.credit().signum() > 0} ? ${@fmt.money(e.credit())} : ''"></td>
+            <td class="num" th:text="${@fmt.money(e.balance())}">0</td>
+            <td class="num">
+              <form class="inline" method="post" th:if="${e.type() == 'BILL'}"
+                    th:action="@{/customers/{cid}/sales/{eid}/delete(cid=${customer.id}, eid=${e.id()})}"
+                    onsubmit="return confirm('Delete this delivery?')">
+                <button class="btn small danger" type="submit">Delete</button>
+              </form>
+              <form class="inline" method="post" th:unless="${e.type() == 'BILL'}"
+                    th:action="@{/customers/{cid}/payments/{eid}/delete(cid=${customer.id}, eid=${e.id()})}"
+                    onsubmit="return confirm('Delete this payment?')">
+                <button class="btn small danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${ledger.isEmpty()}">
+            <td colspan="7" class="empty">No deliveries or payments yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

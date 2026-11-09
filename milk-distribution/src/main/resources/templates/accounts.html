@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Accounts')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('accounts')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Accounts</h1>
+      <p class="muted">Money invested, money received, and what is still pending on both sides.</p>
+    </div>
+  </div>
+
+  <h2>Money going out (buying milk)</h2>
+  <section class="stats three">
+    <div class="stat accent">
+      <span class="label">Total invested in milk</span>
+      <span class="value" th:text="${@fmt.money(summary.invested())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Paid to suppliers</span>
+      <span class="value" th:text="${@fmt.money(summary.paidToSuppliers())}">0</span>
+    </div>
+    <div class="stat bad">
+      <span class="label">Pending amount to pay suppliers</span>
+      <span class="value" th:text="${@fmt.money(summary.pendingToSuppliers())}">0</span>
+    </div>
+  </section>
+
+  <h2>Money coming in (selling milk)</h2>
+  <section class="stats three">
+    <div class="stat accent">
+      <span class="label">Total milk billed to customers</span>
+      <span class="value" th:text="${@fmt.money(summary.totalSales())}">0</span>
+    </div>
+    <div class="stat ok">
+      <span class="label">Received from customers</span>
+      <span class="value" th:text="${@fmt.money(summary.received())}">0</span>
+    </div>
+    <div class="stat warn">
+      <span class="label">Pending collection</span>
+      <span class="value" th:text="${@fmt.money(summary.pendingCollection())}">0</span>
+    </div>
+  </section>
+
+  <h2>Where you stand</h2>
+  <section class="stats three">
+    <div class="stat" th:classappend="${summary.netCash().signum() < 0} ? 'bad' : 'ok'">
+      <span class="label">Net cash so far</span>
+      <span class="value" th:text="${@fmt.money(summary.netCash())}">0</span>
+      <span class="sub">Received from customers minus paid to suppliers</span>
+    </div>
+    <div class="stat" th:classappend="${summary.estimatedProfit().signum() < 0} ? 'bad' : 'ok'">
+      <span class="label">Estimated profit</span>
+      <span class="value" th:text="${@fmt.money(summary.estimatedProfit())}">0</span>
+      <span class="sub">Sales minus cost of milk sold or wasted (average purchase cost)</span>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div>
+      <h2>Pending collection by customer</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Customer</th><th>Location</th><th class="num">Pending</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${pendingCustomers}">
+              <td><a th:href="@{/customers/{id}(id=${r.customer().id})}" th:text="${r.customer().name}">Name</a></td>
+              <td th:text="${r.customer().location}">Location</td>
+              <td class="num due" th:text="${@fmt.money(r.balance())}">0</td>
+            </tr>
+            <tr th:if="${pendingCustomers.isEmpty()}">
+              <td colspan="3" class="empty">Nobody owes you anything.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2>Pending to pay by supplier</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Supplier</th><th>Location</th><th class="num">To pay</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${pendingSuppliers}">
+              <td><a th:href="@{/suppliers/{id}(id=${r.supplier().id})}" th:text="${r.supplier().name}">Name</a></td>
+              <td th:text="${r.supplier().location}">Location</td>
+              <td class="num owe" th:text="${@fmt.money(r.balance())}">0</td>
+            </tr>
+            <tr th:if="${pendingSuppliers.isEmpty()}">
+              <td colspan="3" class="empty">You do not owe any supplier.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div>
+      <h2>Recent payments received</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Customer</th><th>Note</th><th class="num">Amount</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${recentReceived}">
+              <td th:text="${#temporals.format(p.paymentDate, 'dd MMM yyyy')}">date</td>
+              <td><a th:href="@{/customers/{id}(id=${p.customer.id})}" th:text="${p.customer.name}">Name</a></td>
+              <td th:text="${p.note}">note</td>
+              <td class="num clear" th:text="${@fmt.money(p.amount)}">0</td>
+            </tr>
+            <tr th:if="${recentReceived.isEmpty()}">
+              <td colspan="4" class="empty">No payments received yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2>Recent payments to suppliers</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Supplier</th><th>Note</th><th class="num">Amount</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${recentPaid}">
+              <td th:text="${#temporals.format(p.paymentDate, 'dd MMM yyyy')}">date</td>
+              <td><a th:href="@{/suppliers/{id}(id=${p.supplier.id})}" th:text="${p.supplier.name}">Name</a></td>
+              <td th:text="${p.note}">note</td>
+              <td class="num" th:text="${@fmt.money(p.amount)}">0</td>
+            </tr>
+            <tr th:if="${recentPaid.isEmpty()}">
+              <td colspan="4" class="empty">No payments made yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

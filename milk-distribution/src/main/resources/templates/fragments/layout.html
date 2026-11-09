@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' · Milk Distribution'">DairyFresh</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header th:fragment="nav(active)" class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" th:href="@{/}">DairyFresh</a>
+    <nav>
+      <a th:href="@{/}" th:classappend="${active == 'home'} ? 'active'">Dashboard</a>
+      <a th:href="@{/customers}" th:classappend="${active == 'customers'} ? 'active'">Customers</a>
+      <a th:href="@{/suppliers}" th:classappend="${active == 'suppliers'} ? 'active'">Suppliers</a>
+      <a th:href="@{/inventory}" th:classappend="${active == 'inventory'} ? 'active'">Inventory</a>
+      <a th:href="@{/accounts}" th:classappend="${active == 'accounts'} ? 'active'">Accounts</a>
+    </nav>
+  </div>
+</header>
+
+<div th:fragment="flash">
+  <div class="flash ok" th:if="${msg != null}" th:text="${msg}"></div>
+  <div class="flash err" th:if="${error != null}" th:text="${error}"></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Inventory')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('inventory')}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Inventory</h1>
+      <p class="muted">Milk bought, delivered, wasted and what is left in stock.</p>
+    </div>
+  </div>
+
+  <div class="alert danger" th:if="${stock.inStock().signum() < 0}">
+    <span>Stock is negative - you have delivered more milk than you have recorded buying. A purchase may be missing.</span>
+  </div>
+
+  <section class="stats">
+    <div class="stat" th:classappend="${stock.inStock().signum() < 0} ? 'bad' : 'ok'">
+      <span class="label">Milk in stock</span>
+      <span class="value" th:text="${@fmt.qty(stock.inStock())} + ' L'">0 L</span>
+      <span class="sub" th:if="${stock.daysCover() != null}"
+            th:text="'about ' + ${stock.daysCover()} + ' days of supply'"></span>
+    </div>
+    <div class="stat">
+      <span class="label">Total bought</span>
+      <span class="value" th:text="${@fmt.qty(stock.purchased())} + ' L'">0 L</span>
+    </div>
+    <div class="stat">
+      <span class="label">Total sold</span>
+      <span class="value" th:text="${@fmt.qty(stock.sold())} + ' L'">0 L</span>
+    </div>
+    <div class="stat">
+      <span class="label">Total wasted</span>
+      <span class="value" th:text="${@fmt.qty(stock.wasted())} + ' L'">0 L</span>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat accent">
+      <span class="label">Invested in milk</span>
+      <span class="value" th:text="${@fmt.money(stock.invested())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Average cost per litre</span>
+      <span class="value" th:text="${@fmt.money(stock.avgCost())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Value of stock in hand</span>
+      <span class="value" th:text="${@fmt.money(stock.stockValue())}">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Daily need (active customers)</span>
+      <span class="value" th:text="${@fmt.qty(stock.dailyDemand())} + ' L'">0 L</span>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <form class="card" method="post" th:action="@{/inventory/purchases}">
+      <h2>Add milk purchase</h2>
+      <div th:if="${suppliers.isEmpty()}" class="muted">
+        Add a supplier first: <a th:href="@{/suppliers/new}">+ Add supplier</a>
+      </div>
+      <div th:unless="${suppliers.isEmpty()}">
+        <div class="form-row">
+          <label>Supplier
+            <select name="supplierId" id="supplierSel" required>
+              <option value="" disabled selected>Choose supplier</option>
+              <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"
+                      th:data-rate="${s.ratePerLitre}">Supplier</option>
+            </select>
+          </label>
+          <label>Date
+            <input type="date" name="purchaseDate" th:value="${today}" required>
+          </label>
+        </div>
+        <div class="form-row" style="margin-top:10px">
+          <label>Litres
+            <input type="number" name="quantity" step="0.01" min="0.01" required>
+          </label>
+          <label>Rate (&#8377;/L)
+            <input type="number" name="rate" id="purchaseRate" step="0.01" min="0.01" required>
+          </label>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" type="submit">Add to stock</button>
+        </div>
+      </div>
+    </form>
+
+    <form class="card" method="post" th:action="@{/inventory/wastage}">
+      <h2>Record wastage (spoiled / spilled)</h2>
+      <div class="form-row">
+        <label>Date
+          <input type="date" name="wasteDate" th:value="${today}" required>
+        </label>
+        <label>Litres
+          <input type="number" name="quantity" step="0.01" min="0.01" required>
+        </label>
+        <label>Reason
+          <input type="text" name="reason" placeholder="spoiled, spilled...">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" type="submit">Save wastage</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="section">
+    <h2>Daily stock movement (last 30 days with activity)</h2>
+    <div class="card flush table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th class="num">Bought (L)</th><th class="num">Sold (L)</th>
+            <th class="num">Wasted (L)</th><th class="num">Stock at end of day (L)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="d : ${days}">
+            <td th:text="${#temporals.format(d.date(), 'dd MMM yyyy')}">date</td>
+            <td class="num" th:text="${@fmt.qty(d.bought())}">0</td>
+            <td class="num" th:text="${@fmt.qty(d.sold())}">0</td>
+            <td class="num" th:text="${@fmt.qty(d.wasted())}">0</td>
+            <td class="num" th:classappend="${d.closing().signum() < 0} ? 'owe'"
+                th:text="${@fmt.qty(d.closing())}">0</td>
+          </tr>
+          <tr th:if="${days.isEmpty()}">
+            <td colspan="5" class="empty">Nothing recorded yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div>
+      <h2>Recent purchases</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Supplier</th><th class="num">Litres</th><th class="num">Rate</th><th class="num">Amount</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${recentPurchases}">
+              <td th:text="${#temporals.format(p.purchaseDate, 'dd MMM yyyy')}">date</td>
+              <td th:text="${p.supplier.name}">supplier</td>
+              <td class="num" th:text="${@fmt.qty(p.quantity)}">0</td>
+              <td class="num" th:text="${@fmt.money(p.rate)}">0</td>
+              <td class="num" th:text="${@fmt.money(p.amount)}">0</td>
+              <td class="num">
+                <form class="inline" method="post" th:action="@{/inventory/purchases/{id}/delete(id=${p.id})}"
+                      onsubmit="return confirm('Delete this purchase?')">
+                  <button class="btn small danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+            <tr th:if="${recentPurchases.isEmpty()}">
+              <td colspan="6" class="empty">No purchases yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2>Wastage log</h2>
+      <div class="card flush table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th class="num">Litres</th><th>Reason</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="w : ${wastageList}">
+              <td th:text="${#temporals.format(w.wasteDate, 'dd MMM yyyy')}">date</td>
+              <td class="num" th:text="${@fmt.qty(w.quantity)}">0</td>
+              <td th:text="${w.reason}">reason</td>
+              <td class="num">
+                <form class="inline" method="post" th:action="@{/inventory/wastage/{id}/delete(id=${w.id})}"
+                      onsubmit="return confirm('Delete this entry?')">
+                  <button class="btn small danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+            <tr th:if="${wastageList.isEmpty()}">
+              <td colspan="4" class="empty">No wastage recorded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  var sel = document.getElementById('supplierSel');
+  var rate = document.getElementById('purchaseRate');
+  if (sel && rate) {
+    sel.addEventListener('change', function () {
+      var r = sel.options[sel.selectedIndex].getAttribute('data-rate');
+      if (r) { rate.value = r; }
+    });
+  }
+</script>
+</body>
+</html>
